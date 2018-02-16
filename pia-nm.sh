@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Install OpenVPN profiles in NetworkManager for PIA
+# Install PIA openvpn modules on fedora
 #
 
 error() {
@@ -14,26 +14,7 @@ fi
 
 pkgerror="Failed to install the required packages, aborting."
 
-##
-# Debian-based distributions
-if command -v apt-get 2>&1 >/dev/null; then
-	installpkg=()
-
-	if ! dpkg -l python2.7 | grep -q '^ii'; then
-		installpkg+=python2.7
-	fi
-	
-	if ! dpkg -l network-manager-openvpn | grep -q '^ii'; then
-		installpkg+=network-manager-openvpn
-	fi
-	
-	if [ ! -z "$installpkg" ]; then
-		apt-get install $installpkg || error $pkgerror
-	fi
-
-##
-# RHEL-based distributions
-elif command -v rpm 2>&1 >/dev/null; then
+if command -v rpm 2>&1 >/dev/null; then
 	installpkg=()
 	
 	if ! rpm -q python 2>&1 >/dev/null; then
@@ -51,23 +32,6 @@ elif command -v rpm 2>&1 >/dev/null; then
 			yum install $installpkg || error "$pkgerror"
 		fi
 	fi
-
-##
-# ArchLinux
-elif command -v pacman 2>&1 >/dev/null; then
-	installpkg=()
-	
-	if ! pacman -Q python2 2>/dev/null; then
-		installpkg+=python2
-	fi
-	
-	if ! pacman -Q networkmanager-openvpn 2>/dev/null; then
-		installpkg+=networkmanager-openvpn
-	fi
-
-	if [ ! -z "$installpkg" ]; then
-		pacman -S $installpkg || error "$pkgerror"
-	fi
 fi
 
 
@@ -81,6 +45,12 @@ if [ -z "$pia_username" ]; then
 	error "Username is required, aborting."
 fi
 
+echo -n "PIA password: "
+read pia_password
+
+if [ -z "$pia_password" ]; then
+	error "Password is required, aborting."
+fi
 
 echo -n "Connection method (UDP/tcp): "
 read pia_tcp
@@ -174,10 +144,13 @@ remote=$host
 cipher=$pia_cipher
 auth=$pia_auth
 connection-type=password
-password-flags=1
+password-flags=0
 port=$pia_port
 proto-tcp=$pia_tcp
 ca=/etc/openvpn/pia-$pia_cert
+
+[vpn-secrets]
+password=$pia_password
 
 [ipv4]
 method=auto
